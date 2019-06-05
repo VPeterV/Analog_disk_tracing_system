@@ -31,6 +31,9 @@ public class ShowPane extends Pane {
         private VBox allNodes=new VBox();
 
         private Circle fcfsCircle=new Circle(5,Color.BLUE);
+        private Circle sstfCircle=new Circle(5,Color.BLUE);
+        private Circle lookCircle=new Circle(5,Color.BLUE);
+        private Circle cscanCircle=new Circle(5,Color.BLUE);
 
 //        private Circle[] fcfsCircles=new Circle[1500];
 //        private Circle[] sstfCircles=new Circle[1500];
@@ -88,9 +91,22 @@ public class ShowPane extends Pane {
     }
 
     private void placeCircles(){
-        fcfsCircle.setTranslateX(14);
-        fcfsCircle.setTranslateY(45);
+//        fcfsCircle.setTranslateX(14);
+//        fcfsCircle.setTranslateY(45);
         fcfsPane.getChildren().add(fcfsCircle);
+
+//        sstfCircle.setTranslateX(14);
+//        sstfCircle.setTranslateY(45);
+        sstfPane.getChildren().add(sstfCircle);
+
+//        lookCircle.setTranslateX(14);
+//        lookCircle.setTranslateY(45);
+        lookPane.getChildren().add(lookCircle);
+
+//        cscanCircle.setTranslateX(14);
+//        cscanCircle.setTranslateY(45);
+        cscanPane.getChildren().add(cscanCircle);
+
 
 
     }
@@ -239,6 +255,30 @@ public class ShowPane extends Pane {
 
     public void setFcfsCircle(Circle fcfsCircle) {
         this.fcfsCircle = fcfsCircle;
+    }
+
+    public Circle getSstfCircle() {
+        return sstfCircle;
+    }
+
+    public void setSstfCircle(Circle sstfCircle) {
+        this.sstfCircle = sstfCircle;
+    }
+
+    public Circle getLookCircle() {
+        return lookCircle;
+    }
+
+    public void setLookCircle(Circle lookCircle) {
+        this.lookCircle = lookCircle;
+    }
+
+    public Circle getCscanCircle() {
+        return cscanCircle;
+    }
+
+    public void setCscanCircle(Circle cscanCircle) {
+        this.cscanCircle = cscanCircle;
     }
 
     //
