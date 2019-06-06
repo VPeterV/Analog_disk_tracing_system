@@ -5,17 +5,23 @@ import javafx.animation.*;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.event.Event;
 import javafx.event.EventHandler;
 import javafx.scene.paint.Color;
+import javafx.scene.paint.Stop;
 import javafx.scene.shape.*;
 import javafx.scene.text.Text;
 import javafx.util.Duration;
 import sample.utils.BinarySearch;
+import sample.utils.Const;
 import sample.utils.TextSetter;
+import sample.view.OperatingPane;
 import sample.view.ShowPane;
 
+import javax.naming.TimeLimitExceededException;
 import java.sql.Time;
 import java.text.CollationElementIterator;
 import java.util.ArrayList;
@@ -45,26 +51,49 @@ public class ShowPaneController {
 
     private boolean turnRight=false;         //The initial direction of movement of disk magnetic head
 
-    private SimpleBooleanProperty isPlaying= new SimpleBooleanProperty(true);
+    private SimpleBooleanProperty isPlaying;
 
     private int[] initNumber=new int[1];
 
-    public ShowPaneController(){
-        initNumber[0]=500;
+    private OperatingPaneController operatingPaneController;
+
+    public ShowPaneController(OperatingPaneController operatingPaneController){
+
+        this.operatingPaneController=operatingPaneController;
+        this.isPlaying=this.operatingPaneController.isPlayingProperty();
+
+        initNumber[0]=750;
+//        if(operatingPaneController.getStartIndex().getText())
+
+        if(Const.isInteger(operatingPaneController.getStartIndex().getText())){
+            int inputNumber=Integer.valueOf(operatingPaneController.getStartIndex().getText());
+            if(inputNumber>=0 && inputNumber<=1499){
+                initNumber[0]=inputNumber;
+            }
+        }
+
         showPane=new ShowPane();
+
         fcfsCircle=showPane.getFcfsCircle();
         sstfCircle=showPane.getSstfCircle();
         lookCircle=showPane.getLookCircle();
         cscanCircle=showPane.getCscanCircle();
         placeCircles();
+
         getRandomNumbers();
         System.out.println(randomNumbers);
         this.fcfsNumbers=fcfsAlgorithm();
         this.sstfNumbers=sstfAlgorithm();
         this.lookNumbers=lookAlgorithm();
+        this.cscanNumbers=cscanAlgorithm();
+        System.out.println(this.sstfNumbers);
         System.out.println(this.lookNumbers);
+        System.out.println(this.cscanNumbers);
+
         movementTimesTitleFcfs=showPane.getMovementTimesTitleFcfs();
         movementTimesTitleSstf=showPane.getMovementTimesTitleSstf();
+        movementTimesTitleLook=showPane.getMovementTimesTitleLook();
+        movementTimesTitleCscan=showPane.getMovementTimesTitleCscan();
         paneAnimation();
 
     }
@@ -140,8 +169,6 @@ public class ShowPaneController {
         for(int i=0;i<400;i++){
             this.lookNumbers.add(randomNumbers.get(i));
         }
-
-        boolean turnRight=true;
         Collections.sort(lookNumbers);
 
         int miniDistanceIndex= BinarySearch.binarySearch(lookNumbers,current);
@@ -164,26 +191,37 @@ public class ShowPaneController {
             }
         }
         return lookList;
+    }
 
-//        if(current<lookNumbers.get(miniDistanceIndex)){
-//            turnRight=true;
-//        }
-//        else if (current>lookNumbers.get(miniDistanceIndex)){
-//            turnRight= false;
-//        }
-//        else{
-//            if(miniDistanceIndex==399){
-//                turnRight=false;
-//            }
-//            else if(miniDistanceIndex==0){
-//                turnRight=true;
-//            }
-//            else{
-//                int compare=(lookNumbers.get(miniDistanceIndex+1)-current)-(current-lookNumbers.get(miniDistanceIndex-1));
-//                if(compare)
-//            }
-//        }
+    private ArrayList<Integer> cscanAlgorithm(){
+        ArrayList<Integer> cscanList=new ArrayList<>(400);
+        int current=initNumber[0];
+        cscanNumbers.clear();
+        for(int i=0;i<400;i++){
+            cscanNumbers.add(randomNumbers.get(i));
+        }
 
+        Collections.sort(cscanNumbers);
+        int miniDistanceIndex= BinarySearch.binarySearch(cscanNumbers,current);
+
+
+        if(this.turnRight){
+            for(int i=miniDistanceIndex;i<cscanNumbers.size();i++){
+                cscanList.add(cscanNumbers.get(i));
+            }
+            for(int i=0;i<miniDistanceIndex;i++){
+                cscanList.add(cscanNumbers.get(i));
+            }
+        }
+        else{
+            for(int i=miniDistanceIndex-1;i>=0;i--){
+                cscanList.add(cscanNumbers.get(i));
+            }
+            for(int i=cscanNumbers.size()-1;i>=miniDistanceIndex;i--){
+                cscanList.add(cscanNumbers.get(i));
+            }
+        }
+        return cscanList;
     }
 
     public void paneAnimation(){
@@ -194,12 +232,15 @@ public class ShowPaneController {
         int[] fcfsMoveTimes=new int[1];
         fcfsMoveTimes[0]=0;
         EventHandler<ActionEvent> fcfsEventEventHandler=e->{
-            int fcfsNumber=fcfsGetNumber(fcfsIndexNumber[0]);
-            fcfsMoveTimes[0]+=Math.abs((fcfsNumber-fcfsInitNumber[0]));
-            fcfsInitNumber[0]=fcfsNumber;
-            fcfsIndexNumber[0]++;
-            fcfsCircle.setTranslateX(14+0.29*fcfsNumber);
-            movementTimesTitleFcfs.setText("磁头移动次数 : "+String.valueOf(fcfsMoveTimes[0]));
+            if (fcfsIndexNumber[0]<=399){
+                int fcfsNumber=fcfsGetNumber(fcfsIndexNumber[0]);
+                fcfsMoveTimes[0]+=Math.abs((fcfsNumber-fcfsInitNumber[0]));
+                fcfsInitNumber[0]=fcfsNumber;
+                fcfsIndexNumber[0]++;
+                fcfsCircle.setTranslateX(14+0.29*fcfsNumber);
+                movementTimesTitleFcfs.setText("磁头移动次数 : "+String.valueOf(fcfsMoveTimes[0]));
+            }
+
         };
 
         int[] sstfIndexNumber=new int[1];
@@ -208,20 +249,78 @@ public class ShowPaneController {
         sstfInitNumber[0]=initNumber[0];
         int[] sstfMoveTimes=new int[1];
         sstfMoveTimes[0]=0;
+        System.out.println("SSTF");
+        System.out.println(sstfNumbers);
         EventHandler<ActionEvent> sstfEventEventHandler=e->{
-            int sstfNumber=sstfGetNumber(sstfIndexNumber[0]);
-            sstfMoveTimes[0]+=Math.abs((sstfNumber-sstfInitNumber[0]));
-            sstfInitNumber[0]=sstfNumber;
-            sstfIndexNumber[0]++;
-            sstfCircle.setTranslateX(14+0.29*sstfNumber);
-            movementTimesTitleSstf.setText("磁头移动次数 : "+String.valueOf(sstfMoveTimes[0]));
+            if(sstfIndexNumber[0]<=399){
+                int sstfNumber=sstfGetNumber(sstfIndexNumber[0]);
+                sstfMoveTimes[0]+=Math.abs((sstfNumber-sstfInitNumber[0]));
+                sstfInitNumber[0]=sstfNumber;
+                sstfIndexNumber[0]++;
+                sstfCircle.setTranslateX(14+0.29*sstfNumber);
+                movementTimesTitleSstf.setText("磁头移动次数 : "+String.valueOf(sstfMoveTimes[0]));
+            }
+
+        };
+
+        int[] lookIndexNumber=new int[1];
+        lookIndexNumber[0]=0;
+        int[] lookInitNumber=new int[1];
+        lookInitNumber[0]=initNumber[0];
+        int[] lookMoveTimes=new int[1];
+        lookMoveTimes[0]=0;
+        EventHandler<ActionEvent> lookEventEventHandler=e->{
+            if(lookIndexNumber[0]<=399){
+                int lookNumber=lookGetNumber(lookIndexNumber[0]);
+                lookMoveTimes[0]+=Math.abs((lookNumber-lookInitNumber[0]));
+                lookInitNumber[0]=lookNumber;
+                lookIndexNumber[0]++;
+                lookCircle.setTranslateX(14+0.29*lookNumber);
+                movementTimesTitleLook.setText("磁头移动次数 : "+String.valueOf(lookMoveTimes[0]));
+            }
+
+        };
+
+        int[] cscanIndexNumber=new int[1];
+        cscanIndexNumber[0]=0;
+        int[] cscanInitNumber=new int[1];
+        cscanInitNumber[0]=initNumber[0];
+        int[] cscanMoveTimes=new int[1];
+        cscanMoveTimes[0]=0;
+        EventHandler<ActionEvent> cscanEventEventHandler=e->{
+            if(cscanIndexNumber[0]<=399){
+                int cscanNumber=cscanGetNumber(cscanIndexNumber[0]);
+                cscanMoveTimes[0]+=Math.abs((cscanNumber-cscanInitNumber[0]));
+                cscanInitNumber[0]=cscanNumber;
+                cscanIndexNumber[0]++;
+                cscanCircle.setTranslateX(14+0.29*cscanNumber);
+                movementTimesTitleCscan.setText("磁头移动次数 : "+String.valueOf(cscanMoveTimes[0]));
+            }
+
         };
 
         Timeline timeline=new Timeline();
-        timeline.getKeyFrames().addAll(new KeyFrame(Duration.millis(100),fcfsEventEventHandler),
-                new KeyFrame(Duration.millis(100),sstfEventEventHandler));
+        timeline.getKeyFrames().addAll(
+                new KeyFrame(Duration.millis(100),fcfsEventEventHandler),
+                new KeyFrame(Duration.millis(100),sstfEventEventHandler),
+                new KeyFrame(Duration.millis(100),lookEventEventHandler),
+                new KeyFrame(Duration.millis(100),cscanEventEventHandler));
+
         timeline.setCycleCount(Timeline.INDEFINITE);
-        timeline.play();
+        this.isPlaying.addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observableValue, Boolean aBoolean, Boolean t1) {
+                if(t1.booleanValue()){
+                    timeline.play();
+                }
+                else{
+                    timeline.pause();
+                }
+            }
+        });
+        if(fcfsMoveTimes[0]==399){
+            timeline.stop();
+        }
 
     }
 //        timer.start();
@@ -236,6 +335,8 @@ public class ShowPaneController {
     private int lookGetNumber(int index){
         return lookNumbers.get(index);
     }
+
+    private int cscanGetNumber(int index){return cscanNumbers.get(index);}
 
     public ShowPane getShowPane() {
         return showPane;
