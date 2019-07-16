@@ -1,4 +1,4 @@
-# Analog_disk_tracing_system
+# Analog disk tracing system
 Operating System's major coursework
 
 
